@@ -224,6 +224,12 @@ function getLabelMap(
 }
 
 function normalizeCapturedKey(key: string, code: string): string | null {
+  const physicalKey = alphanumericKeyFromCode(code)
+
+  if (physicalKey) {
+    return physicalKey
+  }
+
   if (!key || key === 'Unidentified' || key === 'Dead') {
     return fallbackKeyFromCode(code)
   }
@@ -247,11 +253,7 @@ function normalizeDisplayKey(key: string): string {
   return key
 }
 
-function fallbackKeyFromCode(code: string): string | null {
-  if (!code) {
-    return null
-  }
-
+function alphanumericKeyFromCode(code: string): string | null {
   if (code.startsWith('Key')) {
     return code.slice(3).toUpperCase()
   }
@@ -262,6 +264,20 @@ function fallbackKeyFromCode(code: string): string | null {
 
   if (code.startsWith('Numpad')) {
     return code.replace('Numpad', 'Numpad ')
+  }
+
+  return null
+}
+
+function fallbackKeyFromCode(code: string): string | null {
+  if (!code) {
+    return null
+  }
+
+  const alphanumericKey = alphanumericKeyFromCode(code)
+
+  if (alphanumericKey) {
+    return alphanumericKey
   }
 
   return code.replace(/([a-z])([A-Z])/g, '$1 $2')

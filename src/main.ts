@@ -24,6 +24,8 @@ const PLATFORM_LABELS = {
   linux: 'Linux',
 } as const
 
+const CONFIG_PANEL_STATE_KEY = 'shortcut-notation:config-panel-open'
+
 const app = document.querySelector<HTMLDivElement>('#app')
 
 if (!app) {
@@ -36,60 +38,62 @@ let currentShortcut: Shortcut = {
   key: null,
 }
 let historyItems: string[] = []
+let isConfigPanelOpen = readConfigPanelState()
 
 app.innerHTML = `
-  <main class="app-shell">
-    <section class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">Keyboard shortcut notation maker</p>
-        <h1>Capture shortcuts and export them in the format you want.</h1>
-        <p class="lead">
-          Press a key combination anywhere on the page. The app turns it into plain text,
-          Markdown, or HTML button-style markup and keeps a shareable URL for your current settings.
-        </p>
+  <main class="app-shell ${isConfigPanelOpen ? 'app-shell--config-open' : ''}">
+    <div class="topbar">
+      <button id="toggle-config" type="button" class="toggle-config" aria-expanded="${isConfigPanelOpen}" aria-controls="config-panel">
+        ${isConfigPanelOpen ? 'Hide options' : 'Show options'}
+      </button>
+    </div>
+
+    <section class="capture-stage panel">
+      <div class="capture-stage__header">
+        <div>
+          <p class="section-label">Shortcut capture</p>
+          <h1>Press your shortcut.</h1>
+        </div>
+        <span class="capture-badge">Listening</span>
       </div>
-      <div class="hero-card">
-        <p class="status-label">Detected platform</p>
-        <strong id="detected-platform"></strong>
-        <p class="status-note">Auto mode uses the detected platform and falls back to macOS when it cannot tell.</p>
+
+      <p class="capture-help">
+        Press any key combination anywhere on the page. The generated notation updates instantly.
+      </p>
+
+      <div class="field field--large">
+        <span>Generated output</span>
+        <textarea id="shortcut-output" readonly rows="6" tabindex="-1" data-ignore-shortcut-capture="true"></textarea>
+      </div>
+
+      <div class="button-row">
+        <button id="copy-plain" type="button">Copy plain text</button>
+        <button id="copy-html" type="button" class="secondary">Copy HTML</button>
+        <button id="copy-link" type="button" class="secondary">Copy share link</button>
+        <button id="clear-shortcut" type="button" class="ghost">Clear</button>
+      </div>
+
+      <p id="feedback" class="feedback" aria-live="polite"></p>
+
+      <div class="rendered-preview">
+        <p class="section-label">Rendered preview</p>
+        <div id="rendered-output" class="render-surface" aria-live="polite"></div>
       </div>
     </section>
 
-    <section class="layout">
-      <section class="panel capture-panel">
-        <div class="panel-heading">
+    <div class="secondary-layout">
+      <section class="panel history-panel">
+        <div class="history-header">
           <div>
-            <p class="section-label">Capture</p>
-            <h2>Press your shortcut</h2>
+            <p class="section-label">Recent captures</p>
+            <h2>Quick history</h2>
           </div>
-          <span class="capture-badge">Listening</span>
+          <button id="clear-history" type="button" class="text-button">Clear</button>
         </div>
-
-        <p class="capture-help">
-          Shortcut capture is active across the page. Browser-reserved shortcuts may still be intercepted before the page sees them.
-        </p>
-
-        <label class="field">
-          <span>Generated output</span>
-          <textarea id="shortcut-output" readonly rows="5" data-ignore-shortcut-capture="true"></textarea>
-        </label>
-
-        <div class="rendered-preview">
-          <p class="section-label">Rendered preview</p>
-          <div id="rendered-output" class="render-surface" aria-live="polite"></div>
-        </div>
-
-        <div class="button-row">
-          <button id="copy-plain" type="button">Copy plain text</button>
-          <button id="copy-html" type="button" class="secondary">Copy HTML</button>
-          <button id="copy-link" type="button" class="secondary">Copy share link</button>
-          <button id="clear-shortcut" type="button" class="ghost">Clear</button>
-        </div>
-
-        <p id="feedback" class="feedback" aria-live="polite"></p>
+        <ul id="history-list" class="history-list"></ul>
       </section>
 
-      <aside class="panel controls-panel">
+      <aside id="config-panel" class="panel config-panel" aria-hidden="${!isConfigPanelOpen}">
         <div class="panel-heading">
           <div>
             <p class="section-label">Configuration</p>
@@ -137,25 +141,17 @@ app.innerHTML = `
             </select>
           </label>
         </div>
-
-        <div class="tips-card">
-          <p class="section-label">Ideas to explore</p>
-          <ul>
-            <li>Preset bundles for docs, product pages, and app UIs.</li>
-            <li>Recent capture history for repeated copy workflows.</li>
-            <li>Readable share links to pass formatting choices to teammates.</li>
-          </ul>
-        </div>
-
-        <div class="history-card">
-          <div class="history-header">
-            <p class="section-label">Recent captures</p>
-            <button id="clear-history" type="button" class="text-button">Clear history</button>
-          </div>
-          <ul id="history-list" class="history-list"></ul>
-        </div>
       </aside>
-    </section>
+    </div>
+
+    <footer class="footer-meta">
+      <div class="platform-note">
+        <span class="section-label">Detected platform</span>
+        <span id="detected-platform"></span>
+        <span class="muted-copy">Auto mode uses this and falls back to macOS.</span>
+      </div>
+      <a href="/about.html" class="footer-link">About</a>
+    </footer>
   </main>
 `
 
@@ -173,11 +169,16 @@ const copyLinkButton = getElement<HTMLButtonElement>('#copy-link')
 const clearShortcutButton = getElement<HTMLButtonElement>('#clear-shortcut')
 const clearHistoryButton = getElement<HTMLButtonElement>('#clear-history')
 const historyListEl = getElement<HTMLUListElement>('#history-list')
+const toggleConfigButton = getElement<HTMLButtonElement>('#toggle-config')
+const configPanelEl = getElement<HTMLElement>('#config-panel')
+const appShellEl = getElement<HTMLElement>('.app-shell')
 
 outputStyleEl.value = config.outputStyle
 platformEl.value = config.platform
 labelStyleEl.value = config.labelStyle
 separatorEl.value = config.separator
+
+updateConfigPanelUi()
 
 document.addEventListener('keydown', (event) => {
   if (shouldIgnoreCapture(event) || event.repeat) {
@@ -193,6 +194,12 @@ document.addEventListener('keydown', (event) => {
   currentShortcut = capturedShortcut
   updateHistory(formatShortcut(currentShortcut, config).plainText)
   render()
+})
+
+toggleConfigButton.addEventListener('click', () => {
+  isConfigPanelOpen = !isConfigPanelOpen
+  writeConfigPanelState(isConfigPanelOpen)
+  updateConfigPanelUi()
 })
 
 outputStyleEl.addEventListener('change', () => {
@@ -308,6 +315,13 @@ function updateHistory(item: string): void {
   historyItems = [item, ...historyItems.filter((entry) => entry !== item)].slice(0, 6)
 }
 
+function updateConfigPanelUi(): void {
+  appShellEl.classList.toggle('app-shell--config-open', isConfigPanelOpen)
+  toggleConfigButton.textContent = isConfigPanelOpen ? 'Hide options' : 'Show options'
+  toggleConfigButton.setAttribute('aria-expanded', String(isConfigPanelOpen))
+  configPanelEl.setAttribute('aria-hidden', String(!isConfigPanelOpen))
+}
+
 function readConfigFromUrl(): FormatterConfig {
   const params = new URLSearchParams(window.location.search)
 
@@ -321,6 +335,15 @@ function readConfigFromUrl(): FormatterConfig {
     labelStyle: readEnumValue(params.get('labels'), ['auto', 'short', 'long', 'symbols'], DEFAULT_CONFIG.labelStyle),
     separator: readEnumValue(params.get('separator'), ['space', 'plus'], DEFAULT_CONFIG.separator),
   }
+}
+
+function readConfigPanelState(): boolean {
+  const stored = window.localStorage.getItem(CONFIG_PANEL_STATE_KEY)
+  return stored === 'true'
+}
+
+function writeConfigPanelState(isOpen: boolean): void {
+  window.localStorage.setItem(CONFIG_PANEL_STATE_KEY, String(isOpen))
 }
 
 function syncUrl(nextConfig: FormatterConfig): void {
