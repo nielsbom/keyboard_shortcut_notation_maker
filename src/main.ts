@@ -25,6 +25,8 @@ const PLATFORM_LABELS = {
 } as const
 
 const CONFIG_PANEL_STATE_KEY = 'shortcut-notation:config-panel-open'
+const HISTORY_KEY = 'shortcut-notation:history'
+const HISTORY_LIMIT = 6
 
 const app = document.querySelector<HTMLDivElement>('#app')
 
@@ -37,7 +39,7 @@ let currentShortcut: Shortcut = {
   modifiers: [],
   key: null,
 }
-let historyItems: string[] = []
+let historyItems: string[] = readHistory()
 let isConfigPanelOpen = readConfigPanelState()
 
 app.innerHTML = `
@@ -281,6 +283,7 @@ clearShortcutButton.addEventListener('click', () => {
 
 clearHistoryButton.addEventListener('click', () => {
   historyItems = []
+  writeHistory(historyItems)
   renderHistory()
   setFeedback('History cleared.')
 })
@@ -312,7 +315,8 @@ function updateHistory(item: string): void {
     return
   }
 
-  historyItems = [item, ...historyItems.filter((entry) => entry !== item)].slice(0, 6)
+  historyItems = [item, ...historyItems.filter((entry) => entry !== item)].slice(0, HISTORY_LIMIT)
+  writeHistory(historyItems)
 }
 
 function updateConfigPanelUi(): void {
@@ -344,6 +348,25 @@ function readConfigPanelState(): boolean {
 
 function writeConfigPanelState(isOpen: boolean): void {
   window.localStorage.setItem(CONFIG_PANEL_STATE_KEY, String(isOpen))
+}
+
+function readHistory(): string[] {
+  try {
+    const stored = window.localStorage.getItem(HISTORY_KEY)
+    const parsed: unknown = stored ? JSON.parse(stored) : null
+
+    if (!Array.isArray(parsed)) {
+      return []
+    }
+
+    return parsed.filter((item): item is string => typeof item === 'string').slice(0, HISTORY_LIMIT)
+  } catch {
+    return []
+  }
+}
+
+function writeHistory(items: string[]): void {
+  window.localStorage.setItem(HISTORY_KEY, JSON.stringify(items))
 }
 
 function syncUrl(nextConfig: FormatterConfig): void {
