@@ -278,14 +278,39 @@ button.ghost,
   margin-top: 8px;
 }
 
-.history-list code {
-  display: inline-block;
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   width: 100%;
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--accent-soft);
   color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.history-item:hover,
+.history-item:focus-visible {
+  border-color: var(--accent);
+}
+
+.history-item__action {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.history-item:hover .history-item__action,
+.history-item:focus-visible .history-item__action {
+  opacity: 1;
 }
 
 .control-grid {
