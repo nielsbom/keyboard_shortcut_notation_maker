@@ -69,8 +69,7 @@ app.innerHTML = `
       </div>
 
       <div class="button-row">
-        <button id="copy-plain" type="button">Copy plain text</button>
-        <button id="copy-html" type="button" class="secondary">Copy HTML</button>
+        <button id="copy-output" type="button">Copy</button>
         <button id="copy-link" type="button" class="secondary">Copy share link</button>
         <button id="clear-shortcut" type="button" class="ghost">Clear</button>
       </div>
@@ -165,8 +164,7 @@ const outputStyleEl = getElement<HTMLSelectElement>('#output-style')
 const platformEl = getElement<HTMLSelectElement>('#platform')
 const labelStyleEl = getElement<HTMLSelectElement>('#label-style')
 const separatorEl = getElement<HTMLSelectElement>('#separator')
-const copyPlainButton = getElement<HTMLButtonElement>('#copy-plain')
-const copyHtmlButton = getElement<HTMLButtonElement>('#copy-html')
+const copyOutputButton = getElement<HTMLButtonElement>('#copy-output')
 const copyLinkButton = getElement<HTMLButtonElement>('#copy-link')
 const clearShortcutButton = getElement<HTMLButtonElement>('#clear-shortcut')
 const clearHistoryButton = getElement<HTMLButtonElement>('#clear-history')
@@ -224,43 +222,17 @@ separatorEl.addEventListener('change', () => {
   render()
 })
 
-copyPlainButton.addEventListener('click', async () => {
+copyOutputButton.addEventListener('click', async () => {
   const result = formatShortcut(currentShortcut, config)
 
-  if (!result.plainText) {
+  if (!result.displayOutput) {
     setFeedback('Capture a shortcut before copying it.')
     return
   }
 
   try {
-    await navigator.clipboard.writeText(result.plainText)
-    setFeedback('Plain-text shortcut copied.')
-  } catch (error) {
-    setFeedback(toErrorMessage(error))
-  }
-})
-
-copyHtmlButton.addEventListener('click', async () => {
-  const result = formatShortcut(currentShortcut, config)
-
-  if (!result.htmlOutput) {
-    setFeedback('Capture a shortcut before copying it.')
-    return
-  }
-
-  try {
-    if (typeof ClipboardItem === 'undefined') {
-      await navigator.clipboard.writeText(result.htmlOutput)
-    } else {
-      const item = new ClipboardItem({
-        'text/plain': new Blob([result.plainText], { type: 'text/plain' }),
-        'text/html': new Blob([result.htmlOutput], { type: 'text/html' }),
-      })
-
-      await navigator.clipboard.write([item])
-    }
-
-    setFeedback('HTML shortcut copied.')
+    await navigator.clipboard.writeText(`${outputEl.value} `)
+    setFeedback('Shortcut copied.')
   } catch (error) {
     setFeedback(toErrorMessage(error))
   }
