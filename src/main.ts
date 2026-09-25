@@ -39,12 +39,7 @@ let currentShortcut: Shortcut = {
   modifiers: [],
   key: null,
 }
-interface HistoryEntry {
-  shortcut: Shortcut
-  label: string
-}
-
-let historyItems: HistoryEntry[] = readHistory()
+let historyItems: Shortcut[] = readHistory()
 let isConfigPanelOpen = readConfigPanelState()
 
 app.innerHTML = `
@@ -197,7 +192,7 @@ document.addEventListener('keydown', (event) => {
   }
 
   currentShortcut = capturedShortcut
-  updateHistory(capturedShortcut, formatShortcut(capturedShortcut, config).plainText)
+  updateHistory(capturedShortcut)
   render()
 })
 
@@ -278,7 +273,7 @@ historyListEl.addEventListener('click', (event) => {
     return
   }
 
-  currentShortcut = entry.shortcut
+  currentShortcut = entry
   render()
   setFeedback('Shortcut restored from history.')
 })
@@ -301,19 +296,20 @@ function renderHistory(): void {
   }
 
   historyListEl.innerHTML = historyItems
-    .map(
-      (entry, index) =>
-        `<li><button type="button" class="history-item" data-index="${index}" aria-label="Click to restore ${escapeMarkup(entry.label)}"><code>${escapeMarkup(entry.label)}</code><span class="history-item__action" aria-hidden="true">Click to restore</span></button></li>`,
-    )
+    .map((shortcut, index) => {
+      const label = formatShortcut(shortcut, config).plainText
+
+      return `<li><button type="button" class="history-item" data-index="${index}" aria-label="Click to restore ${escapeMarkup(label)}"><code>${escapeMarkup(label)}</code><span class="history-item__action" aria-hidden="true">Click to restore</span></button></li>`
+    })
     .join('')
 }
 
-function updateHistory(shortcut: Shortcut, label: string): void {
-  if (!label) {
+function updateHistory(shortcut: Shortcut): void {
+  if (shortcut.modifiers.length === 0 && !shortcut.key) {
     return
   }
 
-  historyItems = [{ shortcut, label }, ...historyItems.filter((entry) => entry.label !== label)].slice(
+  historyItems = [shortcut, ...historyItems.filter((entry) => !sameShortcut(entry, shortcut))].slice(
     0,
     HISTORY_LIMIT,
   )
@@ -351,7 +347,7 @@ function writeConfigPanelState(isOpen: boolean): void {
   window.localStorage.setItem(CONFIG_PANEL_STATE_KEY, String(isOpen))
 }
 
-function readHistory(): HistoryEntry[] {
+function readHistory(): Shortcut[] {
   try {
     const stored = window.localStorage.getItem(HISTORY_KEY)
     const parsed: unknown = stored ? JSON.parse(stored) : null
@@ -360,32 +356,30 @@ function readHistory(): HistoryEntry[] {
       return []
     }
 
-    return parsed.filter(isHistoryEntry).slice(0, HISTORY_LIMIT)
+    return parsed.filter(isShortcut).slice(0, HISTORY_LIMIT)
   } catch {
     return []
   }
 }
 
-function isHistoryEntry(value: unknown): value is HistoryEntry {
+function isShortcut(value: unknown): value is Shortcut {
   if (!value || typeof value !== 'object') {
     return false
   }
 
-  const entry = value as HistoryEntry
-
-  if (typeof entry.label !== 'string' || !entry.shortcut || typeof entry.shortcut !== 'object') {
-    return false
-  }
-
-  const { modifiers, key } = entry.shortcut
+  const { modifiers, key } = value as Shortcut
   const validModifiers =
     Array.isArray(modifiers) && modifiers.every((modifier) => ['ctrl', 'alt', 'shift', 'meta'].includes(modifier))
 
   return validModifiers && (typeof key === 'string' || key === null)
 }
 
-function writeHistory(items: HistoryEntry[]): void {
+function writeHistory(items: Shortcut[]): void {
   window.localStorage.setItem(HISTORY_KEY, JSON.stringify(items))
+}
+
+function sameShortcut(a: Shortcut, b: Shortcut): boolean {
+  return a.key === b.key && a.modifiers.join() === b.modifiers.join()
 }
 
 function syncUrl(nextConfig: FormatterConfig): void {
