@@ -152,7 +152,7 @@ app.innerHTML = `
         <span id="detected-platform"></span>
         <span class="muted-copy">Auto mode uses this and falls back to macOS.</span>
       </div>
-      <a href="/about.html" class="footer-link">About</a>
+      <a href="about.html" class="footer-link">About</a>
     </footer>
   </main>
 `
