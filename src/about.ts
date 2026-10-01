@@ -20,7 +20,7 @@ app.innerHTML = `
         HTML <code>&lt;button&gt;</code>, and macOS symbol-oriented output, plus readable share URLs for the current settings.
       </p>
       <div class="button-row">
-        <a href="/" class="button-link">Back to app</a>
+        <a href="./" class="button-link">Back to app</a>
       </div>
     </section>
   </main>
