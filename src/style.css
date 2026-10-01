@@ -91,12 +91,6 @@ button code {
   padding: 24px 0 32px;
 }
 
-.topbar {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 16px;
-}
-
 .panel {
   border: 1px solid var(--border);
   background: var(--panel);
@@ -178,8 +172,7 @@ textarea {
   pointer-events: none;
 }
 
-.capture-badge,
-.toggle-config {
+.capture-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -253,7 +246,7 @@ button.ghost,
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
   margin-top: 16px;
 }
 
@@ -321,17 +314,6 @@ button.ghost,
 .config-panel {
   position: sticky;
   top: 24px;
-  transition:
-    opacity 180ms ease,
-    transform 180ms ease,
-    visibility 180ms ease;
-}
-
-.app-shell:not(.app-shell--config-open) .config-panel {
-  opacity: 0;
-  transform: translateX(10px);
-  visibility: hidden;
-  pointer-events: none;
 }
 
 .footer-meta {
@@ -391,10 +373,6 @@ button.ghost,
 
   .config-panel {
     position: static;
-  }
-
-  .app-shell:not(.app-shell--config-open) .config-panel {
-    display: none;
   }
 
   .capture-stage__header,
