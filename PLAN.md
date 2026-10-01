@@ -51,6 +51,12 @@ Implementation plan
    - Collapse the side configuration panel by default and persist its state in localStorage.
    - Move the app description onto a dedicated about page linked only from the footer.
 
+Queued follow-ups
+
+- Add a README that links to the GitHub Pages site (https://nielsbom.github.io/keyboard_shortcut_notation_maker/).
+- Remove the macOS symbols preset from the output-style dropdown; it duplicates the modifier-label symbols option.
+- Move the platform dropdown up in the configuration panel.
+
 Notes and considerations
 
 - We should define shortcut ordering rules early so output is consistent across browsers and platforms.
