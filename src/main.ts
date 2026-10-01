@@ -2,6 +2,7 @@ import './style.css'
 import {
   detectPlatform,
   formatShortcut,
+  resolvePlatform,
   shortcutFromKeyboardEvent,
   type FormatterConfig,
   type LabelStyle,
@@ -173,12 +174,15 @@ const toggleConfigButton = getElement<HTMLButtonElement>('#toggle-config')
 const configPanelEl = getElement<HTMLElement>('#config-panel')
 const appShellEl = getElement<HTMLElement>('.app-shell')
 
+const symbolsLabelOption = getElement<HTMLOptionElement>('#label-style option[value="symbols"]')
+
 outputStyleEl.value = config.outputStyle
 platformEl.value = config.platform
 labelStyleEl.value = config.labelStyle
 separatorEl.value = config.separator
 
 updateConfigPanelUi()
+updateLabelStyleOptions()
 
 document.addEventListener('keydown', (event) => {
   if (shouldIgnoreCapture(event) || event.repeat) {
@@ -209,6 +213,7 @@ outputStyleEl.addEventListener('change', () => {
 
 platformEl.addEventListener('change', () => {
   config.platform = platformEl.value as PlatformPreference
+  updateLabelStyleOptions()
   render()
 })
 
@@ -314,6 +319,22 @@ function updateHistory(shortcut: Shortcut): void {
     HISTORY_LIMIT,
   )
   writeHistory(historyItems)
+}
+
+function updateLabelStyleOptions(): void {
+  const supportsSymbols = resolvePlatform(config.platform) === 'mac'
+  const symbolsOptionPresent = labelStyleEl.contains(symbolsLabelOption)
+
+  if (!supportsSymbols && config.labelStyle === 'symbols') {
+    config.labelStyle = 'auto'
+    labelStyleEl.value = 'auto'
+  }
+
+  if (supportsSymbols && !symbolsOptionPresent) {
+    labelStyleEl.append(symbolsLabelOption)
+  } else if (!supportsSymbols && symbolsOptionPresent) {
+    symbolsLabelOption.remove()
+  }
 }
 
 function updateConfigPanelUi(): void {
