@@ -25,7 +25,6 @@ const PLATFORM_LABELS = {
   linux: 'Linux',
 } as const
 
-const CONFIG_PANEL_STATE_KEY = 'shortcut-notation:config-panel-open'
 const HISTORY_KEY = 'shortcut-notation:history'
 const HISTORY_LIMIT = 6
 
@@ -41,16 +40,8 @@ let currentShortcut: Shortcut = {
   key: null,
 }
 let historyItems: Shortcut[] = readHistory()
-let isConfigPanelOpen = readConfigPanelState()
-
 app.innerHTML = `
-  <main class="app-shell ${isConfigPanelOpen ? 'app-shell--config-open' : ''}">
-    <div class="topbar">
-      <button id="toggle-config" type="button" class="toggle-config" aria-expanded="${isConfigPanelOpen}" aria-controls="config-panel">
-        ${isConfigPanelOpen ? 'Hide options' : 'Show options'}
-      </button>
-    </div>
-
+  <main class="app-shell">
     <section class="capture-stage panel">
       <div class="capture-stage__header">
         <div>
@@ -95,7 +86,7 @@ app.innerHTML = `
         <ul id="history-list" class="history-list"></ul>
       </section>
 
-      <aside id="config-panel" class="panel config-panel" aria-hidden="${!isConfigPanelOpen}">
+      <aside id="config-panel" class="panel config-panel">
         <div class="panel-heading">
           <div>
             <p class="section-label">Configuration</p>
@@ -170,9 +161,6 @@ const copyLinkButton = getElement<HTMLButtonElement>('#copy-link')
 const clearShortcutButton = getElement<HTMLButtonElement>('#clear-shortcut')
 const clearHistoryButton = getElement<HTMLButtonElement>('#clear-history')
 const historyListEl = getElement<HTMLUListElement>('#history-list')
-const toggleConfigButton = getElement<HTMLButtonElement>('#toggle-config')
-const configPanelEl = getElement<HTMLElement>('#config-panel')
-const appShellEl = getElement<HTMLElement>('.app-shell')
 
 const symbolsLabelOption = getElement<HTMLOptionElement>('#label-style option[value="symbols"]')
 
@@ -181,7 +169,6 @@ platformEl.value = config.platform
 labelStyleEl.value = config.labelStyle
 separatorEl.value = config.separator
 
-updateConfigPanelUi()
 updateLabelStyleOptions()
 
 document.addEventListener('keydown', (event) => {
@@ -198,12 +185,6 @@ document.addEventListener('keydown', (event) => {
   currentShortcut = capturedShortcut
   updateHistory(capturedShortcut)
   render()
-})
-
-toggleConfigButton.addEventListener('click', () => {
-  isConfigPanelOpen = !isConfigPanelOpen
-  writeConfigPanelState(isConfigPanelOpen)
-  updateConfigPanelUi()
 })
 
 outputStyleEl.addEventListener('change', () => {
@@ -337,13 +318,6 @@ function updateLabelStyleOptions(): void {
   }
 }
 
-function updateConfigPanelUi(): void {
-  appShellEl.classList.toggle('app-shell--config-open', isConfigPanelOpen)
-  toggleConfigButton.textContent = isConfigPanelOpen ? 'Hide options' : 'Show options'
-  toggleConfigButton.setAttribute('aria-expanded', String(isConfigPanelOpen))
-  configPanelEl.setAttribute('aria-hidden', String(!isConfigPanelOpen))
-}
-
 function readConfigFromUrl(): FormatterConfig {
   const params = new URLSearchParams(window.location.search)
 
@@ -357,15 +331,6 @@ function readConfigFromUrl(): FormatterConfig {
     labelStyle: readEnumValue(params.get('labels'), ['auto', 'short', 'long', 'symbols'], DEFAULT_CONFIG.labelStyle),
     separator: readEnumValue(params.get('separator'), ['space', 'plus'], DEFAULT_CONFIG.separator),
   }
-}
-
-function readConfigPanelState(): boolean {
-  const stored = window.localStorage.getItem(CONFIG_PANEL_STATE_KEY)
-  return stored === 'true'
-}
-
-function writeConfigPanelState(isOpen: boolean): void {
-  window.localStorage.setItem(CONFIG_PANEL_STATE_KEY, String(isOpen))
 }
 
 function readHistory(): Shortcut[] {
